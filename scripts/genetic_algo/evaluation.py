@@ -1,6 +1,7 @@
 import datetime
 import os
 import random
+import re
 import shlex
 import subprocess
 import sys
@@ -13,6 +14,8 @@ from evolution.individual_base import Individual
 from objective_function import soft_maximum_worst_case
 from parsing import parse_trades, args_for_strategy
 
+trades_re = r"(\d+) trades over"
+profit_re = r"end balance:[^(]*\(([^%]*)"
 
 def pct(x):
     return x / 100.0
@@ -21,12 +24,11 @@ def pct(x):
 def minutes(x):
     return str(int(x)) + 'm'
 
-
 def runzen(cmdline):
     with open(os.devnull, 'w') as devnull:
-        a = subprocess.check_output(shlex.split(cmdline), stderr=devnull)
-    profit = a.split(b'}')[-1].splitlines()[3].split(b': ')[-1][:-1]
-    trades = parse_trades(a.split(b'}')[-1].splitlines()[4])
+        a = subprocess.check_output(shlex.split(cmdline), stderr=devnull).decode('utf-8')
+    profit = re.search(profit_re, a, re.DOTALL).group(0)
+    trades = re.search(trades_re, a, re.DOTALL).group(0)
     return float(profit), float(trades)
 
 
